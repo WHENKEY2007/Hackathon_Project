@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login | CollabHub</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="left-panel">
+      <h1>Welcome Back</h1>
+      <p>Sign in to continue building your journey.</p>
+    </div>
+
+    <div class="right-panel">
+      <div class="login-box">
+        <h2>Sign In</h2>
+
+        <button id="google-signin" class="google-btn">
+          <img src="assets/google-icon.svg" class="google-icon" alt="Google">
+          Continue with Google
+        </button>
+
+        <div class="divider"><span>or</span></div>
+
+        <form id="login-form" novalidate>
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="Enter your email" required>
+
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Enter your password" required>
+
+          <button type="submit" class="login-btn">Login</button>
+          <p id="login-error" class="error"></p>
+        </form>
+
+        <p class="switch-form">Don't have an account? <a href="signup.html">Sign Up</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="login.js"></script>
+</body>
+</html>

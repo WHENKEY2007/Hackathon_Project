@@ -1,0 +1,32 @@
+/* styles.css - CollabHub shared styles */
+*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+:root{
+  --bg:#f5f7fa;--left:#1a1a1a;--accent:#2ecc71;--muted:#6b7280;--card:#fff;
+}
+body{background:var(--bg);color:#111;height:100vh}
+.container{display:flex;height:100vh}
+.left-panel{flex:1.2;background:#111827;color:#fff;padding:80px 50px;display:flex;flex-direction:column;justify-content:center}
+.left-panel h1{font-size:36px;margin-bottom:14px}
+.left-panel p{opacity:.85}
+.right-panel{flex:1;display:flex;justify-content:center;align-items:center}
+.login-box{width:85%;max-width:420px;background:transparent}
+h2{margin-bottom:18px}
+.google-btn{width:100%;padding:12px;background:#fff;border:1px solid #ddd;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer}
+.google-icon{width:20px;height:20px}
+.divider{text-align:center;margin:18px 0;color:var(--muted)}
+.divider span{background:var(--bg);padding:0 10px}
+label{display:block;margin:8px 0 6px;font-size:14px}
+input{width:100%;padding:12px;border-radius:8px;border:1px solid #d1d5db;margin-bottom:10px}
+input:focus{outline:2px solid rgba(59,130,246,0.12);border-color:#3b82f6}
+.login-btn{width:100%;padding:12px;border-radius:8px;border:0;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+.error{color:#dc2626;margin-top:6px}
+.success{color:#059669;margin-top:6px}
+.switch-form{margin-top:16px;text-align:center;color:var(--muted)}
+.switch-form a{color:#3b82f6;text-decoration:none;font-weight:600}
+.small-btn{padding:8px 10px;border-radius:8px;border:0;background:#111827;color:#fff;font-weight:600;cursor:pointer}
+
+/* Responsive */
+@media (max-width:900px){
+  .left-panel{display:none}
+  .container{height:auto;min-height:100vh}
+}
