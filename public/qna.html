@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Discussion Board • CollabHub</title>
+  <link rel="stylesheet" href="qna.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <h1>CollabHub Discussions</h1>
+      <a href="dashboard.html" class="top-link">← Back to dashboard</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- Left: ask box + feed -->
+    <section class="feed-column">
+
+      <!-- Ask box -->
+      <div class="card ask-card">
+        <h2>Create a post</h2>
+        <form id="question-form">
+          <input id="q-title" type="text" placeholder="Title (e.g. Help with React useState)" maxlength="120" required />
+          <textarea id="q-body" rows="4" placeholder="Describe your question or share context..." required></textarea>
+          <div class="form-footer">
+            <input id="q-author" type="text" placeholder="Your name (optional)" maxlength="50" />
+            <button type="submit" class="btn primary">Post</button>
+          </div>
+          <p id="q-feedback" class="feedback"></p>
+        </form>
+      </div>
+
+      <!-- Feed header -->
+      <div class="feed-header">
+        <h3>Latest posts</h3>
+        <select id="sort-select">
+          <option value="recent">Sort by: Recent</option>
+          <option value="top">Sort by: Top (upvotes)</option>
+        </select>
+        <button id="refresh-btn" class="btn ghost">Refresh</button>
+      </div>
+
+      <!-- Feed list -->
+      <div id="questions-container" class="post-list"></div>
+      <p id="empty-note" class="muted">No posts yet — be the first to ask something!</p>
+    </section>
+
+    <!-- Right: simple sidebar -->
+    <aside class="sidebar">
+      <div class="card">
+        <h3>About this board</h3>
+        <p>Ask doubts, share bugs, or help juniors — keep posts short, clear, and respectful.</p>
+        <ul class="rules">
+          <li>No abuse or spam.</li>
+          <li>Use simple titles.</li>
+          <li>Share what you already tried.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Tips for good questions</h3>
+        <ul class="rules">
+          <li>Add subject / tech in title.</li>
+          <li>Paste error messages or screenshots.</li>
+          <li>Explain expected vs actual output.</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+  <script src="qna.js"></script>
+</body>
+</html>
