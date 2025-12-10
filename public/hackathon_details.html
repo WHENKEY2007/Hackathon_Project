@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1, initial-scale=1" />
+    <title>Hackathon Details</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --accent: #0b79d0;
+            --bg: #f7f9fc;
+            --card: #ffffff;
+            --muted: #6b6f76;
+            --primary-hover: #0966af;
+        }
+
+        body {
+            font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+            margin: 0;
+            background: var(--bg);
+            color: #162029;
+        }
+
+        header {
+            background: linear-gradient(90deg, var(--accent), #05639a);
+            color: white;
+            padding: 12px 18px;
+        }
+
+        header h1 {
+            font-size: 20px;
+            margin: 0;
+        }
+
+        header .container {
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 24px auto;
+            padding: 0 18px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin-top: 0;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e2e6ea;
+            margin-top: 6px;
+            font-family: inherit;
+        }
+
+        button.primary,
+        a.button.primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button.primary:hover,
+        a.button.primary:hover {
+            background: var(--primary-hover);
+            opacity: 1;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .details-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <h1>Hackathon Registration</h1>
+        </div>
+    </header>
+
+    <main class="container">
+        <a href="hackathon.html" class="back-link">← Back to Hackathons</a>
+
+        <div class="card">
+            <h2 id="hackathonName">Loading...</h2>
+            <div class="details-meta">
+                <span id="hackathonPlatform"></span>
+                <span id="hackathonDeadline"></span>
+            </div>
+            <p id="hackathonDesc">Loading description...</p>
+
+            <div id="rulesSection" style="margin-top: 24px;">
+                <h3>Rules & Requirements</h3>
+                <ul id="hackathonRules" style="padding-left: 20px; line-height: 1.6;">
+                    <!-- Rules injected here -->
+                </ul>
+            </div>
+
+            <div id="prizesSection" style="margin-top: 24px;">
+                <h3>Prizes</h3>
+                <p id="hackathonPrizes"></p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Register Now</h3>
+            <p>Ready to participate? Register directly on the official hackathon website.</p>
+            <a id="regLink" href="#" target="_blank" class="button primary"
+                style="display:inline-block; text-align:center; text-decoration:none;">Registration</a>
+        </div>
+    </main>
+
+    <script src="hackathon_data.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+
+            // Check if hackathonData is loaded
+            if (typeof window.hackathonData === 'undefined') {
+                console.error('Hackathon data not loaded');
+                return;
+            }
+
+            const hackathon = window.hackathonData.find(h => h.id === id);
+
+            if (hackathon) {
+                document.getElementById('hackathonName').textContent = hackathon.name;
+                document.getElementById('hackathonPlatform').textContent = 'Platform: ' + hackathon.platform;
+                document.getElementById('hackathonDeadline').textContent = 'Deadline: ' + hackathon.deadline;
+                document.getElementById('hackathonDesc').textContent = hackathon.description;
+
+                // Populate Rules
+                const rulesList = document.getElementById('hackathonRules');
+                if (hackathon.rules && hackathon.rules.length > 0) {
+                    hackathon.rules.forEach(rule => {
+                        const li = document.createElement('li');
+                        li.textContent = rule;
+                        rulesList.appendChild(li);
+                    });
+                } else {
+                    document.getElementById('rulesSection').style.display = 'none';
+                }
+
+                // Populate Prizes
+                if (hackathon.prizes) {
+                    document.getElementById('hackathonPrizes').textContent = hackathon.prizes;
+                } else {
+                    document.getElementById('prizesSection').style.display = 'none';
+                }
+
+                // Update global name for form submission
+                window.currentHackathonName = hackathon.name;
+
+            } else {
+                document.querySelector('main').innerHTML = '<div class="card"><h2>Hackathon not found</h2><a href="hackathon.html" class="back-link">Go Back</a></div>';
+            }
+        });
+
+        function submitExecution(e) {
+            e.preventDefault();
+            const userName = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const team = document.getElementById('team').value.trim();
+            const category = document.getElementById('category').value;
+
+            if (!userName || !email) {
+                alert('Please fill out required fields');
+                return false;
+            }
+
+            // Save to localStorage
+            const registration = {
+                hackathon: window.currentHackathonName || 'Unknown',
+                userName,
+                email,
+                team,
+                category,
+                timestamp: new Date().toISOString()
+            };
+
+            const allRegs = JSON.parse(localStorage.getItem('hackathon_regs') || '[]');
+            allRegs.push(registration);
+            localStorage.setItem('hackathon_regs', JSON.stringify(allRegs));
+
+            // Show success
+            document.getElementById('message').style.display = 'block';
+            document.getElementById('regForm').reset();
+
+            // Optional: Redirect after a delay
+            setTimeout(() => {
+                document.getElementById('message').style.display = 'none';
+                // window.location.href = 'hackathon.html'; 
+            }, 3000);
+
+            return false;
+        }
+    </script>
+</body>
+
+</html>

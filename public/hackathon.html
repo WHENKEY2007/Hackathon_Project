@@ -172,54 +172,9 @@
 
     <div class="card" style="margin-top:16px">
       <h3 style="margin-top:0">Available Hackathons</h3>
-      <div class="hack-list" style="display:flex;flex-direction:column;gap:14px;margin-top:12px">
-
-        <!-- Hackathon 1 -->
-        <div class="row"
-          style="padding:14px;border:1px solid #e3e7ed;border-radius:10px;background:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
-          <div>
-            <strong>Smart India Hackathon (SIH)</strong><br>
-            <span class="tiny">Platform: Government of India</span><br>
-            <span class="tiny">Deadline: 15 March 2025</span>
-          </div>
-          <a href="https://www.sih.gov.in/" target="_blank" class="badge" style="text-decoration:none">Register</a>
-        </div>
-
-        <!-- Hackathon 2 -->
-        <div class="row"
-          style="padding:14px;border:1px solid #e3e7ed;border-radius:10px;background:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
-          <div>
-            <strong>Devfolio – Web3 Hackathon</strong><br>
-            <span class="tiny">Platform: Devfolio</span><br>
-            <span class="tiny">Deadline: 28 February 2025</span>
-          </div>
-          <a href="https://devfolio.co" target="_blank" class="badge" style="text-decoration:none">Register</a>
-        </div>
-
-        <!-- Hackathon 3 -->
-        <div class="row"
-          style="padding:14px;border:1px solid #e3e7ed;border-radius:10px;background:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
-          <div>
-            <strong>Google Solution Challenge</strong><br>
-            <span class="tiny">Platform: Google Developers</span><br>
-            <span class="tiny">Deadline: 1 April 2025</span>
-          </div>
-          <a href="https://developers.google.com/community/gdsc-solution-challenge" target="_blank" class="badge"
-            style="text-decoration:none">Register</a>
-        </div>
-
-        <!-- Hackathon 4 -->
-        <div class="row"
-          style="padding:14px;border:1px solid #e3e7ed;border-radius:10px;background:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
-          <div>
-            <strong>UNICEF Youth Innovation Challenge</strong><br>
-            <span class="tiny">Platform: UNICEF</span><br>
-            <span class="tiny">Deadline: 10 May 2025</span>
-          </div>
-          <a href="https://www.unicef.org/innovation" target="_blank" class="badge"
-            style="text-decoration:none">Register</a>
-        </div>
-
+      <div id="hackathon-list" class="hack-list" style="display:flex;flex-direction:column;gap:14px;margin-top:12px">
+        <!-- Dynamic content will be loaded here -->
+        <p style="text-align:center;color:gray;">Loading hackathons...</p>
       </div>
     </div>
   </main>
@@ -233,7 +188,27 @@
     </div>
   </footer>
 
+  <script src="hackathon_data.js"></script>
   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const listContainer = document.getElementById('hackathon-list');
+      if (typeof window.hackathonData === 'undefined') {
+        listContainer.innerHTML = '<p style="color:red">Error: Could not load data.</p>';
+        return;
+      }
+
+      listContainer.innerHTML = window.hackathonData.map(h => `
+            <div class="row" style="padding:14px;border:1px solid #e3e7ed;border-radius:10px;background:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+                <div>
+                    <strong><a href="hackathon_details.html?id=${h.id}" style="text-decoration:none;color:inherit">${h.name}</a></strong><br>
+                    <span class="tiny">Platform: ${h.platform}</span><br>
+                    <span class="tiny">Deadline: ${h.deadline}</span>
+                </div>
+
+            </div>
+        `).join('');
+    });
+
     function submitForm(e) {
       e.preventDefault();
       // simple demo: save registration to localStorage
