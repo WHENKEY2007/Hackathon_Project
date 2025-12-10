@@ -1,28 +1,7 @@
 // qna.js - Reddit-style discussion board for CollabHub
 
-// Initialize Supabase client
-// Note: In production, credentials should be loaded from environment configuration
-let supabase = null;
-
-// Try to load Supabase from CDN
-if (typeof window.supabase !== 'undefined') {
-  try {
-    // In production, these should come from env/config
-    // For now, we'll detect from window or use localStorage
-    const savedUrl = localStorage.getItem('supabase_url');
-    const savedKey = localStorage.getItem('supabase_key');
-    
-    if (savedUrl && savedKey) {
-      supabase = window.supabase.createClient(savedUrl, savedKey);
-    }
-  } catch (err) {
-    console.warn('Supabase initialization failed:', err);
-  }
-}
-
-// In-memory storage for demo (if Supabase not available)
+// In-memory storage for demo (if API fails)
 let questionsData = [];
-let nextId = 1;
 
 // DOM elements
 const questionForm = document.getElementById('question-form');
@@ -35,140 +14,151 @@ const emptyNote = document.getElementById('empty-note');
 const sortSelect = document.getElementById('sort-select');
 const refreshBtn = document.getElementById('refresh-btn');
 
-// Load some demo data if no questions exist
-function loadDemoData() {
-  if (questionsData.length === 0 && !supabase) {
-    questionsData = [
-      {
-        id: nextId++,
-        title: 'How to get started with React?',
-        body: 'I\'m new to React and want to learn the basics. What resources would you recommend?',
-        author: 'Developer123',
-        upvotes: 5,
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-        answers: [
-          {
-            id: 1,
-            body: 'Start with the official React documentation at react.dev. It has great tutorials!',
-            author: 'ReactPro',
-            created_at: new Date(Date.now() - 1800000).toISOString()
-          }
-        ]
-      },
-      {
-        id: nextId++,
-        title: 'Best practices for Node.js API development?',
-        body: 'What are some best practices I should follow when building RESTful APIs with Node.js and Express?',
-        author: 'BackendDev',
-        upvotes: 3,
-        created_at: new Date(Date.now() - 7200000).toISOString(),
-        answers: []
-      }
-    ];
+// New DOM elements for routing
+const createPostBtn = document.getElementById('create-post-btn');
+const questionDetail = document.getElementById('question-detail');
+const detailContent = document.getElementById('detail-content');
+const backBtn = document.getElementById('back-btn');
+const feedHeader = document.querySelector('.feed-header');
+const askContainer = document.getElementById('ask-container');
+const cancelAskBtn = document.getElementById('cancel-ask-btn');
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadQuestions();
+  handleRouting(); // Check URL on load
+});
+
+// Handle browser back/forward
+window.addEventListener('popstate', handleRouting);
+
+// --- Routing Logic ---
+function handleRouting() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  const view = params.get('view');
+
+  if (view === 'ask') {
+    showAskView();
+  } else if (id) {
+    showDetailView(id);
+  } else {
+    showListView();
   }
 }
 
-// Load questions on page load
-document.addEventListener('DOMContentLoaded', () => {
-  loadDemoData();
+function navigateTo(url) {
+  history.pushState(null, '', url);
+  handleRouting();
+}
+
+// --- View Switchers ---
+
+function showListView() {
+  // Hide others
+  questionDetail.style.display = 'none';
+  askContainer.style.display = 'none';
+
+  // Show List
+  questionsContainer.style.display = 'flex';
+  feedHeader.style.display = 'flex';
+
+  // Show empty note only if no questions
+  emptyNote.style.display = questionsData.length === 0 ? 'block' : 'none';
+
+  // Refresh list to ensure vote counts are up to date
+  renderQuestions();
+}
+
+function showDetailView(questionId) {
+  const question = questionsData.find(q => q.id === Number(questionId));
+
+  // If question not found (e.g. invalid ID), go back to list
+  if (!question) {
+    console.warn('Question not found:', questionId);
+    // If we have data but can't find it, redirect. 
+    // If data is empty, maybe we are still loading? 
+    // But loadQuestions() is awaited in DOMContentLoaded.
+    if (questionsData.length > 0) {
+      navigateTo('qna.html');
+    }
+    return;
+  }
+
+  // Hide others
+  questionsContainer.style.display = 'none';
+  feedHeader.style.display = 'none';
+  emptyNote.style.display = 'none';
+  askContainer.style.display = 'none';
+
+  // Show Detail
+  questionDetail.style.display = 'block';
+  renderDetail(question);
+}
+
+function showAskView() {
+  // Hide others
+  questionsContainer.style.display = 'none';
+  feedHeader.style.display = 'none';
+  emptyNote.style.display = 'none';
+  questionDetail.style.display = 'none';
+
+  // Show Ask Form
+  askContainer.style.display = 'block';
+  qTitle.focus();
+}
+
+// --- Event Listeners ---
+
+// "Ask a Question" button -> Navigate to Ask View
+createPostBtn.addEventListener('click', () => {
+  navigateTo('?view=ask');
+});
+
+// Cancel Ask button -> Go back
+cancelAskBtn.addEventListener('click', () => {
+  history.back();
+});
+
+// Back button in Detail View -> Go back to list
+backBtn.addEventListener('click', () => {
+  // If we have history, go back. Else go to list.
+  if (history.length > 1) {
+    history.back();
+  } else {
+    navigateTo('qna.html');
+  }
+});
+
+// Sort change handler
+sortSelect.addEventListener('change', () => {
+  renderQuestions();
+});
+
+// Refresh button handler
+refreshBtn.addEventListener('click', () => {
   loadQuestions();
 });
 
-// Submit question
-questionForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  qFeedback.textContent = '';
-  
-  const title = qTitle.value.trim();
-  const body = qBody.value.trim();
-  const author = qAuthor.value.trim() || 'Anonymous';
-  
-  if (!title || !body) {
-    qFeedback.textContent = 'Please fill in both title and body.';
-    return;
-  }
-  
-  try {
-    if (supabase) {
-      // Store in Supabase
-      const { data, error } = await supabase
-        .from('questions')
-        .insert([
-          {
-            title,
-            body,
-            author,
-            upvotes: 0,
-            created_at: new Date().toISOString()
-          }
-        ])
-        .select();
-      
-      if (error) throw error;
-      
-      qFeedback.style.color = '#22c55e';
-      qFeedback.textContent = 'Question posted successfully!';
-    } else {
-      // Store in memory
-      const newQuestion = {
-        id: nextId++,
-        title,
-        body,
-        author,
-        upvotes: 0,
-        created_at: new Date().toISOString(),
-        answers: []
-      };
-      questionsData.unshift(newQuestion);
-      
-      qFeedback.style.color = '#22c55e';
-      qFeedback.textContent = 'Question posted successfully!';
-    }
-    
-    // Clear form
-    qTitle.value = '';
-    qBody.value = '';
-    qAuthor.value = '';
-    
-    // Reload questions
-    await loadQuestions();
-    
-    setTimeout(() => {
-      qFeedback.textContent = '';
-    }, 3000);
-  } catch (err) {
-    console.error('Error posting question:', err);
-    qFeedback.style.color = '#f97373';
-    qFeedback.textContent = 'Error posting question. Please try again.';
-  }
-});
+// --- Data & Rendering ---
 
-// Load and display questions
+// Load questions from API
 async function loadQuestions() {
   try {
-    if (supabase) {
-      // Load from Supabase
-      const { data, error } = await supabase
-        .from('questions')
-        .select('*, answers(*)')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      questionsData = data || [];
-    }
-    
-    renderQuestions();
+    const response = await fetch('/api/questions');
+    if (!response.ok) throw new Error('Failed to fetch questions');
+
+    questionsData = await response.json();
   } catch (err) {
     console.error('Error loading questions:', err);
-    // Continue with in-memory data
-    renderQuestions();
+    questionsData = [];
   }
 }
 
-// Render questions to DOM
+// Render questions list (List View)
 function renderQuestions() {
   const sortBy = sortSelect.value;
-  
+
   // Sort questions
   let sorted = [...questionsData];
   if (sortBy === 'top') {
@@ -176,56 +166,93 @@ function renderQuestions() {
   } else {
     sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
-  
+
   if (sorted.length === 0) {
     emptyNote.style.display = 'block';
     questionsContainer.innerHTML = '';
     return;
   }
-  
+
   emptyNote.style.display = 'none';
-  questionsContainer.innerHTML = sorted.map(q => createQuestionHTML(q)).join('');
-  
-  // Attach event listeners
-  attachEventListeners();
+  questionsContainer.innerHTML = sorted.map(q => createQuestionSummaryHTML(q)).join('');
+
+  // Attach event listeners for list view items
+  attachListEventListeners();
 }
 
-// Create HTML for a single question
-function createQuestionHTML(question) {
+// Create HTML for a single question summary (List View)
+function createQuestionSummaryHTML(question) {
   const timeAgo = getTimeAgo(question.created_at);
-  const answers = question.answers || [];
-  
+  const answerCount = question.answers ? question.answers.length : 0;
+
   return `
     <div class="post" data-id="${question.id}">
+      <div class="vote-col">
+        <div class="vote-score">▲ ${question.upvotes || 0}</div>
+      </div>
+      <div class="post-main">
+        <div class="post-title">${escapeHtml(question.title)}</div>
+        <div class="post-meta">Posted by ${escapeHtml(question.author)} • ${timeAgo}</div>
+        <div class="post-actions">
+          <span>💬 ${answerCount} ${answerCount === 1 ? 'comment' : 'comments'}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Attach event listeners for List View
+function attachListEventListeners() {
+  document.querySelectorAll('.post').forEach(post => {
+    post.addEventListener('click', (e) => {
+      // Prevent navigation if clicking vote buttons (if any)
+      if (e.target.closest('.vote-btn')) return;
+
+      const id = post.dataset.id;
+      navigateTo(`?id=${id}`);
+    });
+  });
+}
+
+// Render detail view
+function renderDetail(question) {
+  const timeAgo = getTimeAgo(question.created_at);
+  const answers = question.answers || [];
+
+  detailContent.className = 'detail-view';
+  detailContent.innerHTML = `
+    <div class="post" style="cursor: default;">
       <div class="vote-col">
         <button class="vote-btn upvote" data-id="${question.id}">▲</button>
         <div class="vote-score">${question.upvotes || 0}</div>
         <button class="vote-btn downvote" data-id="${question.id}">▼</button>
       </div>
       <div class="post-main">
-        <div class="post-title">${escapeHtml(question.title)}</div>
+        <div class="post-title" style="font-size: 18px;">${escapeHtml(question.title)}</div>
         <div class="post-meta">Posted by ${escapeHtml(question.author)} • ${timeAgo}</div>
-        <div class="post-body">${escapeHtml(question.body)}</div>
-        <div class="post-actions">
-          <span class="action-link toggle-answers" data-id="${question.id}">
-            💬 ${answers.length} ${answers.length === 1 ? 'answer' : 'answers'}
-          </span>
-          <span class="action-link show-answer-form" data-id="${question.id}">✍️ Answer</span>
-        </div>
-        <div class="answers" id="answers-${question.id}" style="display:none;">
-          ${answers.map(a => createAnswerHTML(a)).join('')}
-          <form class="answer-form" data-question-id="${question.id}" style="display:none;">
-            <textarea placeholder="Write your answer..." rows="3" required></textarea>
+        <div class="post-body" style="font-size: 15px; margin-top: 8px;">${escapeHtml(question.body)}</div>
+        
+        <div class="answers-section">
+          <h3>${answers.length} ${answers.length === 1 ? 'Answer' : 'Answers'}</h3>
+          
+          <form class="answer-form" data-question-id="${question.id}">
+            <textarea placeholder="Write your answer..." rows="4" required></textarea>
             <div class="author-row">
               <input type="text" placeholder="Your name (optional)" maxlength="50" />
               <button type="submit" class="btn primary">Post Answer</button>
             </div>
             <p class="answer-feedback"></p>
           </form>
+
+          <div class="answers-list">
+            ${answers.map(a => createAnswerHTML(a)).join('')}
+          </div>
         </div>
       </div>
     </div>
   `;
+
+  attachDetailEventListeners();
 }
 
 // Create HTML for an answer
@@ -239,167 +266,183 @@ function createAnswerHTML(answer) {
   `;
 }
 
-// Attach event listeners to dynamic elements
-function attachEventListeners() {
+// Attach event listeners for Detail View
+function attachDetailEventListeners() {
   // Upvote buttons
-  document.querySelectorAll('.vote-btn.upvote').forEach(btn => {
+  detailContent.querySelectorAll('.vote-btn.upvote').forEach(btn => {
     btn.addEventListener('click', () => handleVote(btn.dataset.id, 1));
   });
-  
+
   // Downvote buttons
-  document.querySelectorAll('.vote-btn.downvote').forEach(btn => {
+  detailContent.querySelectorAll('.vote-btn.downvote').forEach(btn => {
     btn.addEventListener('click', () => handleVote(btn.dataset.id, -1));
   });
-  
-  // Toggle answers visibility
-  document.querySelectorAll('.toggle-answers').forEach(btn => {
-    btn.addEventListener('click', () => toggleAnswers(btn.dataset.id));
-  });
-  
-  // Show answer form
-  document.querySelectorAll('.show-answer-form').forEach(btn => {
-    btn.addEventListener('click', () => showAnswerForm(btn.dataset.id));
-  });
-  
+
   // Submit answer forms
-  document.querySelectorAll('.answer-form').forEach(form => {
+  detailContent.querySelectorAll('.answer-form').forEach(form => {
     form.addEventListener('submit', (e) => handleAnswerSubmit(e, form));
   });
 }
 
+// --- Actions (Vote, Answer, Post Question) ---
+
+// Submit question
+questionForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  qFeedback.textContent = '';
+
+  const submitBtn = questionForm.querySelector('button[type="submit"]');
+  const originalBtnText = submitBtn.textContent;
+
+  // Set loading state
+  submitBtn.textContent = 'Posting...';
+  submitBtn.disabled = true;
+  submitBtn.style.opacity = '0.7';
+
+  const title = qTitle.value.trim();
+  const body = qBody.value.trim();
+  const author = qAuthor.value.trim() || 'Anonymous';
+
+  if (!title || !body) {
+    qFeedback.textContent = 'Please fill in both title and body.';
+    submitBtn.textContent = originalBtnText;
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, body, author })
+    });
+
+    if (!response.ok) throw new Error('Failed to post question');
+
+    qFeedback.style.color = '#22c55e';
+    qFeedback.textContent = 'Question posted successfully!';
+
+    // Clear form
+    qTitle.value = '';
+    qBody.value = '';
+    qAuthor.value = '';
+
+    // Reload questions to get the new one
+    await loadQuestions();
+
+    setTimeout(() => {
+      qFeedback.textContent = '';
+      // Navigate back to list view
+      navigateTo('qna.html');
+    }, 1000);
+  } catch (err) {
+    console.error('Error posting question:', err);
+    qFeedback.style.color = '#f97373';
+    qFeedback.textContent = 'Error posting question. Please try again.';
+  } finally {
+    // Reset loading state
+    submitBtn.textContent = originalBtnText;
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+  }
+});
+
 // Handle voting
 async function handleVote(questionId, delta) {
   try {
-    // Convert questionId to number for comparison
     const numericId = Number(questionId);
     const question = questionsData.find(q => q.id === numericId);
     if (!question) return;
-    
-    // Prevent negative scores
+
     const newScore = (question.upvotes || 0) + delta;
     if (newScore < 0) return;
-    
+
+    const response = await fetch(`/api/questions/${numericId}/vote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ upvotes: newScore })
+    });
+
+    if (!response.ok) throw new Error('Failed to update vote');
+
     question.upvotes = newScore;
-    
-    if (supabase) {
-      // Update in Supabase
-      const { error } = await supabase
-        .from('questions')
-        .update({ upvotes: question.upvotes })
-        .eq('id', numericId);
-      
-      if (error) throw error;
-    }
-    
-    renderQuestions();
+
+    // Re-render detail view to show new score
+    const scoreEl = detailContent.querySelector('.vote-score');
+    if (scoreEl) scoreEl.textContent = newScore;
+
   } catch (err) {
     console.error('Error voting:', err);
   }
 }
 
-// Toggle answers visibility
-function toggleAnswers(questionId) {
-  const answersDiv = document.getElementById(`answers-${questionId}`);
-  if (answersDiv.style.display === 'none') {
-    answersDiv.style.display = 'block';
-  } else {
-    answersDiv.style.display = 'none';
-  }
-}
-
-// Show answer form
-function showAnswerForm(questionId) {
-  const answersDiv = document.getElementById(`answers-${questionId}`);
-  answersDiv.style.display = 'block';
-  
-  const form = answersDiv.querySelector('.answer-form');
-  form.style.display = 'grid';
-  form.querySelector('textarea').focus();
-}
-
 // Handle answer submission
 async function handleAnswerSubmit(e, form) {
   e.preventDefault();
-  
+
   const questionId = Number(form.dataset.questionId);
   const textarea = form.querySelector('textarea');
   const authorInput = form.querySelector('input[type="text"]');
   const feedback = form.querySelector('.answer-feedback');
-  
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalBtnText = submitBtn.textContent;
+
+  // Set loading state
+  submitBtn.textContent = 'Posting...';
+  submitBtn.disabled = true;
+  submitBtn.style.opacity = '0.7';
+
   const body = textarea.value.trim();
   const author = authorInput.value.trim() || 'Anonymous';
-  
+
   if (!body) {
     feedback.textContent = 'Please write an answer.';
+    submitBtn.textContent = originalBtnText;
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
     return;
   }
-  
+
   try {
-    const newAnswer = {
-      question_id: questionId,
-      body,
-      author,
-      created_at: new Date().toISOString()
-    };
-    
-    if (supabase) {
-      // Insert into Supabase
-      const { error } = await supabase
-        .from('answers')
-        .insert([newAnswer]);
-      
-      if (error) throw error;
-    } else {
-      // Add to in-memory data
-      const question = questionsData.find(q => q.id === questionId);
-      if (question) {
-        if (!question.answers) question.answers = [];
-        // Use crypto API for better ID generation if available, fallback to timestamp + random
-        const answerId = typeof crypto !== 'undefined' && crypto.randomUUID 
-          ? crypto.randomUUID() 
-          : Date.now() + Math.random();
-        question.answers.push({
-          ...newAnswer,
-          id: answerId
-        });
-      }
-    }
-    
+    const response = await fetch('/api/answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question_id: questionId, body, author })
+    });
+
+    if (!response.ok) throw new Error('Failed to post answer');
+
     // Clear form
     textarea.value = '';
     authorInput.value = '';
     feedback.style.color = '#22c55e';
     feedback.textContent = 'Answer posted!';
-    
-    setTimeout(() => {
-      feedback.textContent = '';
-      form.style.display = 'none';
-    }, 2000);
-    
-    // Reload questions
+
+    // Reload questions to get new answer
     await loadQuestions();
+
+    // Re-render detail view
+    const question = questionsData.find(q => q.id === questionId);
+    if (question) renderDetail(question);
+
   } catch (err) {
     console.error('Error posting answer:', err);
     feedback.textContent = 'Error posting answer.';
+  } finally {
+    // Reset loading state
+    submitBtn.textContent = originalBtnText;
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
   }
 }
-
-// Sort change handler
-sortSelect.addEventListener('change', () => {
-  renderQuestions();
-});
-
-// Refresh button handler
-refreshBtn.addEventListener('click', () => {
-  loadQuestions();
-});
 
 // Utility: Get time ago string
 function getTimeAgo(dateString) {
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now - date) / 1000);
-  
+
   if (seconds < 60) return 'just now';
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;

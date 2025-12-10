@@ -7,7 +7,7 @@ document.getElementById('login-form').addEventListener('submit', async function 
   err.textContent = '';
 
   if (!email || !password) { err.textContent = 'Please enter both email and password.'; return; }
-  if (password.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+  // if (password.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
 
   try {
     const res = await fetch('/api/login', {
@@ -21,6 +21,9 @@ document.getElementById('login-form').addEventListener('submit', async function 
       err.textContent = data.error || 'Login failed.';
       return;
     }
+
+    // Save user session
+    localStorage.setItem('user', JSON.stringify(data.user));
 
     // Demo: redirect to dashboard after success
     window.location.href = '/dashboard.html';
