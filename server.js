@@ -156,8 +156,9 @@ app.get('/api/hackathons/:id', (req, res) => {
 // Get Teams for a Hackathon
 app.get('/api/hackathons/:id/teams', (req, res) => {
     const sql = `
-        SELECT t.*, u.name as leader_name, 
-        (SELECT COUNT(*) FROM requests WHERE team_id = t.id AND status = 'approved') as current_members
+        SELECT t.*, u.name as leader_name, u.email as leader_email,
+        (SELECT COUNT(*) FROM requests WHERE team_id = t.id AND status = 'approved') as current_members,
+        (SELECT GROUP_CONCAT(u2.name) FROM requests r JOIN users u2 ON r.user_id = u2.id WHERE r.team_id = t.id AND r.status = 'approved') as member_names
         FROM teams t
         JOIN users u ON t.leader_id = u.id
         WHERE t.hackathon_id = ?

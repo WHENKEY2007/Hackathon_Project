@@ -203,10 +203,19 @@ const HackathonDetails = () => {
                                 </span>
                             </div>
 
-                            <div className="mb-6 flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                                <span className="flex items-center text-xs font-semibold bg-gray-50 dark:bg-gray-900 px-2 py-1 rounded border dark:border-gray-700">
+                            <div className="mb-4 flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <span className="flex items-center text-xs font-semibold bg-gray-50 dark:bg-gray-900 px-2 py-1 rounded border dark:border-gray-700 w-fit">
                                     👑 {team.leader_name}
                                 </span>
+                                {team.member_names && (
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                        {team.member_names.split(',').map((name, i) => (
+                                            <span key={i} className="text-gray-600 dark:text-gray-300 font-medium text-xs">
+                                                @{name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <p className="text-gray-600 dark:text-gray-300 mb-6 flex-1 text-base leading-relaxed">
@@ -228,7 +237,7 @@ const HackathonDetails = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-auto border-t border-gray-100 dark:border-gray-700 pt-5 flex items-center justify-between">
+                            <div className="mt-auto border-t border-gray-100 dark:border-gray-700 pt-5 flex items-center justify-between gap-2">
                                 <span className="text-sm font-bold text-gray-500">
                                     {team.current_members} / {hackathon.max_team_size || hackathon.team_size} Members
                                 </span>
@@ -240,12 +249,21 @@ const HackathonDetails = () => {
                                         Manage Requests
                                     </button>
                                 ) : (
-                                    <button
-                                        onClick={() => handleJoinTeam(team.id)}
-                                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
-                                    >
-                                        Join Team
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <a
+                                            href={`mailto:${team.leader_email}?subject=Join Request: ${team.name}`}
+                                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-bold rounded-xl transition-colors flex items-center gap-2"
+                                            title="Contact Leader"
+                                        >
+                                            ✉️
+                                        </a>
+                                        <button
+                                            onClick={() => handleJoinTeam(team.id)}
+                                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
+                                        >
+                                            Join Team
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
