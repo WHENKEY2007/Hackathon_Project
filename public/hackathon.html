@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hackathon</title>
+  <style>
+    :root {
+      --accent: #0b79d0;
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --muted: #6b6f76
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: #162029
+    }
+
+    header {
+      background: linear-gradient(90deg, var(--accent), #05639a);
+      color: white;
+      padding: 28px 18px
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 24px auto;
+      padding: 0 18px
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px
+    }
+
+    p.lead {
+      margin: 0;
+      color: #eaf6ff
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 18px;
+      margin-top: 18px
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 6px 18px rgba(12, 36, 56, 0.06)
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px
+    }
+
+    .tiny {
+      font-size: 13px;
+      color: var(--muted)
+    }
+
+    ul {
+      padding-left: 18px
+    }
+
+    /* form */
+    label {
+      display: block;
+      font-weight: 600;
+      margin-top: 10px
+    }
+
+    input[type=text],
+    input[type=email],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #e2e6ea;
+      margin-top: 6px
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px
+    }
+
+    button.ghost {
+      background: transparent;
+      border: 1px solid #d1d7dd;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer
+    }
+
+    /* responsive */
+    @media (max-width:800px) {
+      .grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    footer {
+      max-width: 980px;
+      margin: 28px auto 60px;
+      padding: 0 18px;
+      color: var(--muted);
+      font-size: 14px
+    }
+
+    /* schedule */
+    .schedule {
+      display: flex;
+      flex-direction: column;
+      gap: 10px
+    }
+
+    .schedule .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #fbfdff;
+      border: 1px solid #eef4fa
+    }
+
+    /* badges */
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 13px;
+      background: #eef7ff;
+      color: var(--accent)
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1>Hackathon</h1>
+      <p class="lead">Build. Ship. Iterate — 24-hour coding challenge to solve real problems.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2 style="margin-top:20px">Upcoming Hackathons</h2>
+    <p class="tiny">Browse hackathons from different platforms and register easily.</p>
+
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin-top:0">Available Hackathons</h3>
+      <div class="hack-list" style="display:flex;flex-direction:column;gap:14px;margin-top:12px">
+
+        <!-- Hackathon 1 -->
+        <div class="row"
+          style="padding:14px;border:1px solid #e3e7ed;border-radius:10px;background:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+          <div>
+            <strong>Smart India Hackathon (SIH)</strong><br>
+            <span class="tiny">Platform: Government of India</span><br>
+            <span class="tiny">Deadline: 15 March 2025</span>
+          </div>
+          <a href="https://www.sih.gov.in/" target="_blank" class="badge" style="text-decoration:none">Register</a>
+        </div>
+
+        <!-- Hackathon 2 -->
+        <div class="row"
+          style="padding:14px;border:1px solid #e3e7ed;border-radius:10px;background:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+          <div>
+            <strong>Devfolio – Web3 Hackathon</strong><br>
+            <span class="tiny">Platform: Devfolio</span><br>
+            <span class="tiny">Deadline: 28 February 2025</span>
+          </div>
+          <a href="https://devfolio.co" target="_blank" class="badge" style="text-decoration:none">Register</a>
+        </div>
+
+        <!-- Hackathon 3 -->
+        <div class="row"
+          style="padding:14px;border:1px solid #e3e7ed;border-radius:10px;background:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+          <div>
+            <strong>Google Solution Challenge</strong><br>
+            <span class="tiny">Platform: Google Developers</span><br>
+            <span class="tiny">Deadline: 1 April 2025</span>
+          </div>
+          <a href="https://developers.google.com/community/gdsc-solution-challenge" target="_blank" class="badge"
+            style="text-decoration:none">Register</a>
+        </div>
+
+        <!-- Hackathon 4 -->
+        <div class="row"
+          style="padding:14px;border:1px solid #e3e7ed;border-radius:10px;background:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+          <div>
+            <strong>UNICEF Youth Innovation Challenge</strong><br>
+            <span class="tiny">Platform: UNICEF</span><br>
+            <span class="tiny">Deadline: 10 May 2025</span>
+          </div>
+          <a href="https://www.unicef.org/innovation" target="_blank" class="badge"
+            style="text-decoration:none">Register</a>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="tiny">© Hackathon • Built with ❤️</div>
+        <div class="tiny">Contact: hackathon@example.com</div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function submitForm(e) {
+      e.preventDefault();
+      // simple demo: save registration to localStorage
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      if (!name || !email) {
+        alert('Please enter name and email');
+        return false;
+      }
+      const reg = { name, email, category: document.getElementById('category').value, notes: document.getElementById('notes').value, ts: new Date().toISOString() };
+      const all = JSON.parse(localStorage.getItem('hackathon_regs') || '[]');
+      all.push(reg);
+      localStorage.setItem('hackathon_regs', JSON.stringify(all));
+      document.getElementById('message').style.display = 'block';
+      setTimeout(() => document.getElementById('message').style.display = 'none', 3000);
+      document.getElementById('regForm').reset();
+      return false;
+    }
+    function clearForm() { document.getElementById('regForm').reset(); }
+  </script>
+</body>
+
+</html>
