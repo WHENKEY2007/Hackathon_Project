@@ -71,6 +71,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             displaySkills.innerHTML = '<span style="color:#64748b; font-style:italic;">No skills listed</span>';
         }
+
+        // My Hackathons
+        const myHackathons = JSON.parse(localStorage.getItem('hackathon_orders') || '[]');
+        const hacksContainer = document.getElementById('my-hackathons-list');
+
+        if (myHackathons.length > 0) {
+            hacksContainer.innerHTML = myHackathons.map(h => `
+                <div style="background:#0f172a; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <a href="${h.link || '#'}" target="_blank" style="font-weight:bold; color:#e2e8f0; text-decoration:none; cursor:pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(h.name)}</a>
+                        <div style="font-size:12px; color:#9ca3af;">Registered: ${h.date}</div>
+                    </div>
+                    ${h.link ? `<a href="${h.link}" target="_blank" style="color:#3b82f6; text-decoration:none; font-size:14px;">Visit Site</a>` : ''}
+                </div>
+            `).join('');
+        } else {
+            hacksContainer.innerHTML = '<p style="color:#64748b; font-style:italic;">No registered hackathons yet.</p>';
+        }
     }
 
     // Enter Edit Mode

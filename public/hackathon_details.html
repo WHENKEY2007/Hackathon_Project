@@ -25,12 +25,36 @@
         header {
             background: linear-gradient(90deg, var(--accent), #05639a);
             color: white;
+            padding: 0;
+            /* Let container handle padding */
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 12px 18px;
+            max-width: 980px;
+            /* Consolidate width if needed or inherit */
+            margin: 0 auto;
         }
 
         header h1 {
-            font-size: 20px;
             margin: 0;
+            font-size: 20px;
+        }
+
+        header nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        header nav a:hover {
+            color: white;
+            text-decoration: underline;
         }
 
         header .container {
@@ -118,8 +142,12 @@
 
 <body>
     <header>
-        <div class="container">
+        <div class="container" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
             <h1>Hackathon Registration</h1>
+            <nav>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="profile.html">My Profile</a>
+            </nav>
         </div>
     </header>
 
