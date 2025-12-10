@@ -7,7 +7,7 @@ let questionsData = [];
 const questionForm = document.getElementById('question-form');
 const qTitle = document.getElementById('q-title');
 const qBody = document.getElementById('q-body');
-const qAuthor = document.getElementById('q-author');
+const qBody = document.getElementById('q-body');
 const qFeedback = document.getElementById('q-feedback');
 const questionsContainer = document.getElementById('questions-container');
 const emptyNote = document.getElementById('empty-note');
@@ -62,6 +62,7 @@ function showListView() {
   // Show List
   questionsContainer.style.display = 'flex';
   feedHeader.style.display = 'flex';
+  createPostBtn.style.display = 'block'; // Show sidebar button
 
   // Show empty note only if no questions
   emptyNote.style.display = questionsData.length === 0 ? 'block' : 'none';
@@ -93,6 +94,7 @@ function showDetailView(questionId) {
 
   // Show Detail
   questionDetail.style.display = 'block';
+  createPostBtn.style.display = 'block'; // Show sidebar button
   renderDetail(question);
 }
 
@@ -102,6 +104,7 @@ function showAskView() {
   feedHeader.style.display = 'none';
   emptyNote.style.display = 'none';
   questionDetail.style.display = 'none';
+  createPostBtn.style.display = 'none'; // Hide sidebar button
 
   // Show Ask Form
   askContainer.style.display = 'block';
@@ -238,7 +241,6 @@ function renderDetail(question) {
           <form class="answer-form" data-question-id="${question.id}">
             <textarea placeholder="Write your answer..." rows="4" required></textarea>
             <div class="author-row">
-              <input type="text" placeholder="Your name (optional)" maxlength="50" />
               <button type="submit" class="btn primary">Post Answer</button>
             </div>
             <p class="answer-feedback"></p>
@@ -300,8 +302,18 @@ questionForm.addEventListener('submit', async (e) => {
   submitBtn.style.opacity = '0.7';
 
   const title = qTitle.value.trim();
+  const tagsInput = document.getElementById('q-tags').value.trim();
   const body = qBody.value.trim();
-  const author = qAuthor.value.trim() || 'Anonymous';
+
+  // Get author from logged-in user
+  let author = 'Anonymous';
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    const user = JSON.parse(userStr);
+    author = user.user_metadata?.full_name || user.email || 'Anonymous';
+  }
+
+  const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
 
   if (!title || !body) {
     qFeedback.textContent = 'Please fill in both title and body.';
@@ -315,7 +327,7 @@ questionForm.addEventListener('submit', async (e) => {
     const response = await fetch('/api/questions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, body, author })
+      body: JSON.stringify({ title, body, author, tags })
     });
 
     if (!response.ok) throw new Error('Failed to post question');
@@ -325,8 +337,8 @@ questionForm.addEventListener('submit', async (e) => {
 
     // Clear form
     qTitle.value = '';
+    document.getElementById('q-tags').value = '';
     qBody.value = '';
-    qAuthor.value = '';
 
     // Reload questions to get the new one
     await loadQuestions();
@@ -383,7 +395,6 @@ async function handleAnswerSubmit(e, form) {
 
   const questionId = Number(form.dataset.questionId);
   const textarea = form.querySelector('textarea');
-  const authorInput = form.querySelector('input[type="text"]');
   const feedback = form.querySelector('.answer-feedback');
   const submitBtn = form.querySelector('button[type="submit"]');
   const originalBtnText = submitBtn.textContent;
@@ -394,7 +405,14 @@ async function handleAnswerSubmit(e, form) {
   submitBtn.style.opacity = '0.7';
 
   const body = textarea.value.trim();
-  const author = authorInput.value.trim() || 'Anonymous';
+
+  // Get author from logged-in user
+  let author = 'Anonymous';
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    const user = JSON.parse(userStr);
+    author = user.user_metadata?.full_name || user.email || 'Anonymous';
+  }
 
   if (!body) {
     feedback.textContent = 'Please write an answer.';
@@ -415,7 +433,6 @@ async function handleAnswerSubmit(e, form) {
 
     // Clear form
     textarea.value = '';
-    authorInput.value = '';
     feedback.style.color = '#22c55e';
     feedback.textContent = 'Answer posted!';
 

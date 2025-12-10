@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const displayEmail = document.getElementById('display-email');
     const displayBio = document.getElementById('display-bio');
     const displaySkills = document.getElementById('display-skills');
+    const displayAchievements = document.getElementById('display-achievements');
     const avatarInitials = document.getElementById('avatar-initials');
     const editBtn = document.getElementById('edit-btn');
 
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editFullname = document.getElementById('edit-fullname');
     const editBio = document.getElementById('edit-bio');
     const editSkills = document.getElementById('edit-skills');
+    const editAchievements = document.getElementById('edit-achievements');
     const cancelBtn = document.getElementById('cancel-btn');
 
     // Initial Data
@@ -56,10 +58,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const email = user.email;
         const bio = currentProfile.bio || 'No bio yet.';
         const skills = currentProfile.skills || [];
+        const achievements = currentProfile.achievements || 'No achievements yet.';
 
         displayName.textContent = name;
         displayEmail.textContent = email;
         displayBio.textContent = bio;
+        displayAchievements.textContent = achievements;
 
         // Avatar
         const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -82,6 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         editFullname.value = currentProfile.full_name || user.user_metadata?.full_name || '';
         editBio.value = currentProfile.bio || '';
         editSkills.value = (currentProfile.skills || []).join(', ');
+        editAchievements.value = currentProfile.achievements || '';
     });
 
     // Cancel Edit
@@ -105,11 +110,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const updatedName = editFullname.value.trim();
         const updatedBio = editBio.value.trim();
         const updatedSkills = editSkills.value.split(',').map(s => s.trim()).filter(s => s);
+        const updatedAchievements = editAchievements.value.trim();
 
         const payload = {
             full_name: updatedName,
             bio: updatedBio,
-            skills: updatedSkills
+            skills: updatedSkills,
+            achievements: updatedAchievements
         };
 
         try {

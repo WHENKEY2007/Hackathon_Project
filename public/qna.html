@@ -31,6 +31,7 @@
           <select id="sort-select">
             <option value="recent">Sort by: Recent</option>
             <option value="top">Sort by: Top (upvotes)</option>
+            <option value="recommended">Recommended for You</option>
           </select>
           <button id="refresh-btn" class="btn ghost">Refresh</button>
         </div>
@@ -53,9 +54,9 @@
           <form id="question-form">
             <input id="q-title" type="text" placeholder="Title (e.g. Help with React useState)" maxlength="120"
               required />
+            <input id="q-tags" type="text" placeholder="Tags (e.g. React, JavaScript) - separated by commas" />
             <textarea id="q-body" rows="6" placeholder="Describe your question or share context..." required></textarea>
             <div class="form-footer">
-              <input id="q-author" type="text" placeholder="Your name (optional)" maxlength="50" />
               <button type="submit" class="btn primary">Post Question</button>
               <button type="button" id="cancel-ask-btn" class="btn ghost">Cancel</button>
             </div>

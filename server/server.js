@@ -92,7 +92,8 @@ app.post('/api/questions', async (req, res) => {
       .insert([{
         title,
         body,
-        author: author || 'Anonymous'
+        author: author || 'Anonymous',
+        tags: req.body.tags || []
       }])
       .select();
 
@@ -196,6 +197,7 @@ app.post('/api/profiles/:id', async (req, res) => {
         full_name,
         bio,
         skills,
+        achievements: req.body.achievements,
         social_links,
         updated_at: new Date().toISOString()
       })

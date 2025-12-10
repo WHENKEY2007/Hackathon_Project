@@ -66,31 +66,40 @@ body {
   margin-top: 0;
 }
 
-/* Ask card */
-.ask-card h2 {
+/* Ask form */
+#question-form h2 {
   font-size: 18px;
   margin-bottom: 10px;
 }
 
-.ask-card input,
-.ask-card textarea {
+#question-form input,
+#question-form textarea {
   width: 100%;
   border-radius: 8px;
   border: 1px solid #334155;
   background: #020617;
   color: #e5e7eb;
-  padding: 8px 10px;
+  padding: 10px 12px;
   font-size: 14px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  font-family: inherit;
 }
 
-.ask-card input::placeholder,
-.ask-card textarea::placeholder {
-  color: #6b7280;
+#question-form input:focus,
+#question-form textarea:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
 }
 
-.ask-card textarea {
+#question-form input::placeholder,
+#question-form textarea::placeholder {
+  color: #64748b;
+}
+
+#question-form textarea {
   resize: vertical;
+  min-height: 120px;
 }
 
 .form-footer {
