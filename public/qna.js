@@ -1,8 +1,7 @@
 // qna.js - Reddit-style discussion board for CollabHub
 
 // Initialize Supabase client
-const SUPABASE_URL = 'https://placeholder.supabase.co';
-const SUPABASE_ANON_KEY = 'placeholder-key';
+// Note: In production, credentials should be loaded from environment configuration
 let supabase = null;
 
 // Try to load Supabase from CDN
@@ -36,8 +35,42 @@ const emptyNote = document.getElementById('empty-note');
 const sortSelect = document.getElementById('sort-select');
 const refreshBtn = document.getElementById('refresh-btn');
 
+// Load some demo data if no questions exist
+function loadDemoData() {
+  if (questionsData.length === 0 && !supabase) {
+    questionsData = [
+      {
+        id: nextId++,
+        title: 'How to get started with React?',
+        body: 'I\'m new to React and want to learn the basics. What resources would you recommend?',
+        author: 'Developer123',
+        upvotes: 5,
+        created_at: new Date(Date.now() - 3600000).toISOString(),
+        answers: [
+          {
+            id: 1,
+            body: 'Start with the official React documentation at react.dev. It has great tutorials!',
+            author: 'ReactPro',
+            created_at: new Date(Date.now() - 1800000).toISOString()
+          }
+        ]
+      },
+      {
+        id: nextId++,
+        title: 'Best practices for Node.js API development?',
+        body: 'What are some best practices I should follow when building RESTful APIs with Node.js and Express?',
+        author: 'BackendDev',
+        upvotes: 3,
+        created_at: new Date(Date.now() - 7200000).toISOString(),
+        answers: []
+      }
+    ];
+  }
+}
+
 // Load questions on page load
 document.addEventListener('DOMContentLoaded', () => {
+  loadDemoData();
   loadQuestions();
 });
 
@@ -237,17 +270,23 @@ function attachEventListeners() {
 // Handle voting
 async function handleVote(questionId, delta) {
   try {
-    const question = questionsData.find(q => q.id == questionId);
+    // Convert questionId to number for comparison
+    const numericId = Number(questionId);
+    const question = questionsData.find(q => q.id === numericId);
     if (!question) return;
     
-    question.upvotes = (question.upvotes || 0) + delta;
+    // Prevent negative scores
+    const newScore = (question.upvotes || 0) + delta;
+    if (newScore < 0) return;
+    
+    question.upvotes = newScore;
     
     if (supabase) {
       // Update in Supabase
       const { error } = await supabase
         .from('questions')
         .update({ upvotes: question.upvotes })
-        .eq('id', questionId);
+        .eq('id', numericId);
       
       if (error) throw error;
     }
@@ -282,7 +321,7 @@ function showAnswerForm(questionId) {
 async function handleAnswerSubmit(e, form) {
   e.preventDefault();
   
-  const questionId = form.dataset.questionId;
+  const questionId = Number(form.dataset.questionId);
   const textarea = form.querySelector('textarea');
   const authorInput = form.querySelector('input[type="text"]');
   const feedback = form.querySelector('.answer-feedback');
@@ -312,12 +351,16 @@ async function handleAnswerSubmit(e, form) {
       if (error) throw error;
     } else {
       // Add to in-memory data
-      const question = questionsData.find(q => q.id == questionId);
+      const question = questionsData.find(q => q.id === questionId);
       if (question) {
         if (!question.answers) question.answers = [];
+        // Use crypto API for better ID generation if available, fallback to timestamp + random
+        const answerId = typeof crypto !== 'undefined' && crypto.randomUUID 
+          ? crypto.randomUUID() 
+          : Date.now() + Math.random();
         question.answers.push({
           ...newAnswer,
-          id: Date.now()
+          id: answerId
         });
       }
     }
@@ -373,35 +416,4 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
-}
-
-// Load some demo data if no questions exist
-if (questionsData.length === 0 && !supabase) {
-  questionsData = [
-    {
-      id: nextId++,
-      title: 'How to get started with React?',
-      body: 'I\'m new to React and want to learn the basics. What resources would you recommend?',
-      author: 'Developer123',
-      upvotes: 5,
-      created_at: new Date(Date.now() - 3600000).toISOString(),
-      answers: [
-        {
-          id: 1,
-          body: 'Start with the official React documentation at react.dev. It has great tutorials!',
-          author: 'ReactPro',
-          created_at: new Date(Date.now() - 1800000).toISOString()
-        }
-      ]
-    },
-    {
-      id: nextId++,
-      title: 'Best practices for Node.js API development?',
-      body: 'What are some best practices I should follow when building RESTful APIs with Node.js and Express?',
-      author: 'BackendDev',
-      upvotes: 3,
-      created_at: new Date(Date.now() - 7200000).toISOString(),
-      answers: []
-    }
-  ];
 }
