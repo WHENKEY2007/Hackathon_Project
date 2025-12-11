@@ -1,254 +1,270 @@
+require('dotenv').config();
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 
 const app = express();
-const PORT = 5000;
-const SECRET_KEY = 'super_secret_key'; // Change this in production
+const PORT = process.env.PORT || 5000;
+const SECRET_KEY = process.env.SECRET_KEY || 'super_secret_key';
+
+// Initialize Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error('Error: SUPABASE_URL and SUPABASE_KEY are required in .env file');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Database Connection
-const db = new sqlite3.Database('./hackathon.db', (err) => {
-    if (err) console.error(err.message);
-    else console.log('Connected to the SQLite database.');
-});
-
-// Create Tables if they don't exist
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        email TEXT UNIQUE,
-        password TEXT,
-        university TEXT,
-        skills TEXT,
-        profile_photo TEXT
-    )`);
-
-    db.run(`CREATE TABLE IF NOT EXISTS hackathons (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        description TEXT,
-        start_date TEXT,
-        max_team_size INTEGER,
-        type TEXT,
-        url TEXT,
-        created_by_user_id INTEGER,
-        organizer_name TEXT
-    )`);
-
-    db.run(`CREATE TABLE IF NOT EXISTS teams (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        hackathon_id INTEGER,
-        leader_id INTEGER,
-        description TEXT,
-        needed_skills TEXT,
-        FOREIGN KEY(hackathon_id) REFERENCES hackathons(id),
-        FOREIGN KEY(leader_id) REFERENCES users(id)
-    )`);
-
-    db.run(`CREATE TABLE IF NOT EXISTS requests (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        team_id INTEGER,
-        user_id INTEGER,
-        status TEXT DEFAULT 'pending',
-        FOREIGN KEY(team_id) REFERENCES teams(id),
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    )`);
-});
-
 // --- Auth Routes ---
 
 // Register
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
     const { name, email, password, university, skills, profile_photo } = req.body;
     const hashedPassword = bcrypt.hashSync(password, 8);
     const skillsString = Array.isArray(skills) ? skills.join(',') : skills;
 
-    db.run(`INSERT INTO users (name, email, password, university, skills, profile_photo) VALUES (?, ?, ?, ?, ?, ?)`,
-        [name, email, hashedPassword, university, skillsString, profile_photo],
-        function (err) {
-            if (err) return res.status(500).json({ error: 'User already exists or database error.' });
-            res.json({ message: 'User registered successfully!' });
-        }
-    );
+    // Check if user exists
+    const { data: existing } = await supabase.from('users').select('id').eq('email', email).single();
+    if (existing) {
+        return res.status(500).json({ error: 'User already exists or database error.' });
+    }
+
+    const { error } = await supabase.from('users').insert([
+        { name, email, password: hashedPassword, university, skills: skillsString, profile_photo }
+    ]);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: 'User registered successfully!' });
 });
 
 // Login
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, user) => {
-        if (err || !user) return res.status(404).json({ error: 'User not found.' });
 
-        const validPassword = bcrypt.compareSync(password, user.password);
-        if (!validPassword) return res.status(401).json({ error: 'Invalid password.' });
+    const { data: user, error } = await supabase.from('users').select('*').eq('email', email).single();
 
-        const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: '24h' });
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, profile_photo: user.profile_photo } });
-    });
+    if (error || !user) return res.status(404).json({ error: 'User not found.' });
+
+    const validPassword = bcrypt.compareSync(password, user.password);
+    if (!validPassword) return res.status(401).json({ error: 'Invalid password.' });
+
+    const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: '24h' });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, profile_photo: user.profile_photo } });
 });
 
 // Get Current User (Me)
-app.get('/api/auth/me', (req, res) => {
+app.get('/api/auth/me', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token provided' });
 
-    jwt.verify(token, SECRET_KEY, (err, decoded) => {
-        if (err) return res.status(500).json({ error: 'Failed to authenticate token' });
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('id, name, email, profile_photo')
+            .eq('id', decoded.id)
+            .single();
 
-        db.get(`SELECT id, name, email, profile_photo FROM users WHERE id = ?`, [decoded.id], (err, user) => {
-            if (err || !user) return res.status(404).json({ error: 'User not found' });
-            res.json(user);
-        });
-    });
+        if (error || !user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    } catch (err) {
+        return res.status(500).json({ error: 'Failed to authenticate token' });
+    }
 });
 
 // --- Hackathon Routes ---
 
 // Get All Hackathons
-app.get('/api/hackathons', (req, res) => {
-    const sql = `SELECT * FROM hackathons`;
-    db.all(sql, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+app.get('/api/hackathons', async (req, res) => {
+    const { data, error } = await supabase.from('hackathons').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
 // Create Hackathon
-app.post('/api/hackathons', (req, res) => {
+app.post('/api/hackathons', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-    jwt.verify(token, SECRET_KEY, (err, decoded) => {
-        if (err) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
 
-        db.get(`SELECT name FROM users WHERE id = ?`, [decoded.id], (err, user) => {
-            const { title, description, start_date, max_team_size, type, url } = req.body;
-            db.run(`INSERT INTO hackathons (title, description, start_date, max_team_size, type, url, created_by_user_id, organizer_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, description, start_date, max_team_size, type, url, decoded.id, user.name],
-                function (err) {
-                    if (err) return res.status(500).json({ error: err.message });
-                    res.json({ id: this.lastID });
-                }
-            );
-        });
-    });
+        // Get user name
+        const { data: user, error: userError } = await supabase.from('users').select('name').eq('id', decoded.id).single();
+        if (userError) return res.status(401).json({ error: 'Unauthorized' });
+
+        const { title, description, start_date, max_team_size, type, url } = req.body;
+
+        const { data, error } = await supabase.from('hackathons').insert([
+            { title, description, start_date, max_team_size, type, url, created_by_user_id: decoded.id, organizer_name: user.name }
+        ]).select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ id: data[0].id });
+
+    } catch (err) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 });
 
 // Get Single Hackathon Details
-app.get('/api/hackathons/:id', (req, res) => {
-    const sql = `SELECT * FROM hackathons WHERE id = ?`;
-    db.get(sql, [req.params.id], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(row);
-    });
+app.get('/api/hackathons/:id', async (req, res) => {
+    const { data, error } = await supabase.from('hackathons').select('*').eq('id', req.params.id).single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
 // --- Team Routes ---
 
 // Get Teams for a Hackathon
-app.get('/api/hackathons/:id/teams', (req, res) => {
-    const sql = `
-        SELECT t.*, u.name as leader_name, u.email as leader_email,
-        (SELECT COUNT(*) FROM requests WHERE team_id = t.id AND status = 'approved') as current_members,
-        (SELECT GROUP_CONCAT(u2.name) FROM requests r JOIN users u2 ON r.user_id = u2.id WHERE r.team_id = t.id AND r.status = 'approved') as member_names
-        FROM teams t
-        JOIN users u ON t.leader_id = u.id
-        WHERE t.hackathon_id = ?
-    `;
-    db.all(sql, [req.params.id], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
+app.get('/api/hackathons/:id/teams', async (req, res) => {
+    // We need to fetch teams, their leaders, and their approved members
+    // Supabase standard client can do deep Selects
+    // Relation names depend on how FKs are set up. Assuming 'users' referenced by 'leader_id'
+
+    // Attempting a relational query. If strict FKs are not set or named differently, this might fail slightly,
+    // but we requested FKs in the plan.
+    // 'leader:users!leader_id' means join users table via leader_id column and alias as leader.
+
+    const { data: teams, error } = await supabase
+        .from('teams')
+        .select(`
+            *,
+            leader:users!leader_id (name, email),
+            requests (
+                status,
+                user:users (name)
+            )
+        `)
+        .eq('hackathon_id', req.params.id);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Format the response to match the previous structure
+    // We filter requests to only 'approved' ones to count members and list names
+    const formattedTeams = teams.map(team => {
+        const approvedRequests = team.requests ? team.requests.filter(r => r.status === 'approved') : [];
+        const memberNames = approvedRequests.map(r => r.user?.name).filter(Boolean).join(',');
+
+        return {
+            ...team,
+            leader_name: team.leader?.name,
+            leader_email: team.leader?.email,
+            current_members: approvedRequests.length, // Leader is usually added as a member in requests too
+            member_names: memberNames
+        };
     });
+
+    res.json(formattedTeams);
 });
 
 // Create Team
-app.post('/api/hackathons/:id/teams', (req, res) => {
+app.post('/api/hackathons/:id/teams', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-    jwt.verify(token, SECRET_KEY, (err, decoded) => {
-        if (err) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
 
         const { name, description, needed_skills } = req.body;
         const skillsString = Array.isArray(needed_skills) ? needed_skills.join(',') : needed_skills;
 
-        db.run(`INSERT INTO teams (name, hackathon_id, leader_id, description, needed_skills) VALUES (?, ?, ?, ?, ?)`,
-            [name, req.params.id, decoded.id, description, skillsString],
-            function (err) {
-                if (err) return res.status(500).json({ error: err.message });
+        // Insert team
+        const { data: teamData, error: teamError } = await supabase.from('teams').insert([
+            { name, hackathon_id: req.params.id, leader_id: decoded.id, description, needed_skills: skillsString }
+        ]).select();
 
-                // Auto-add leader as member (optional, strictly speaking leader is already linked, but usually they count as a member)
-                // Let's add them to requests as approved so they count in member count
-                db.run(`INSERT INTO requests (team_id, user_id, status) VALUES (?, ?, 'approved')`,
-                    [this.lastID, decoded.id],
-                    (err) => {
-                        if (err) console.error("Failed to add leader to team members", err);
-                    }
-                );
+        if (teamError) return res.status(500).json({ error: teamError.message });
 
-                res.json({ id: this.lastID });
-            }
-        );
-    });
+        const teamId = teamData[0].id;
+
+        // Auto-add leader as member (approved)
+        const { error: reqError } = await supabase.from('requests').insert([
+            { team_id: teamId, user_id: decoded.id, status: 'approved' }
+        ]);
+
+        if (reqError) console.error("Failed to add leader to team members", reqError);
+
+        res.json({ id: teamId });
+
+    } catch (err) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 });
 
 // Join Team Request
-app.post('/api/teams/:id/join', (req, res) => {
+app.post('/api/teams/:id/join', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-    jwt.verify(token, SECRET_KEY, (err, decoded) => {
-        if (err) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
 
         // Check if already requested
-        db.get(`SELECT * FROM requests WHERE team_id = ? AND user_id = ?`, [req.params.id, decoded.id], (err, row) => {
-            if (row) return res.status(400).json({ error: 'Request already sent' });
+        const { data: existing } = await supabase.from('requests')
+            .select('*')
+            .eq('team_id', req.params.id)
+            .eq('user_id', decoded.id)
+            .single();
 
-            db.run(`INSERT INTO requests (team_id, user_id, status) VALUES (?, ?, 'pending')`,
-                [req.params.id, decoded.id],
-                function (err) {
-                    if (err) return res.status(500).json({ error: err.message });
-                    res.json({ message: 'Request sent' });
-                }
-            );
-        });
-    });
+        if (existing) return res.status(400).json({ error: 'Request already sent' });
+
+        const { error } = await supabase.from('requests').insert([
+            { team_id: req.params.id, user_id: decoded.id, status: 'pending' }
+        ]);
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Request sent' });
+
+    } catch (err) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 });
 
 // Get Requests for a Team
-app.get('/api/teams/:id/requests', (req, res) => {
-    const sql = `
-        SELECT r.id, r.status, u.name as user_name, u.email as user_email, u.university as user_university, u.skills as user_skills
-        FROM requests r
-        JOIN users u ON r.user_id = u.id
-        WHERE r.team_id = ?
-    `;
-    db.all(sql, [req.params.id], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.get('/api/teams/:id/requests', async (req, res) => {
+    const { data: requests, error } = await supabase
+        .from('requests')
+        .select(`
+            id, status,
+            user:users (name, email, university, skills)
+        `)
+        .eq('team_id', req.params.id);
 
-        const formattedRows = rows.map(row => ({
-            ...row,
-            user_skills: row.user_skills ? row.user_skills.split(',') : []
-        }));
-        res.json(formattedRows);
-    });
+    if (error) return res.status(500).json({ error: error.message });
+
+    const formattedRequests = requests.map(r => ({
+        id: r.id,
+        status: r.status,
+        user_name: r.user?.name,
+        user_email: r.user?.email,
+        user_university: r.user?.university,
+        user_skills: r.user?.skills ? r.user.skills.split(',') : []
+    }));
+
+    res.json(formattedRequests);
 });
 
 // Approve/Reject Request
-app.put('/api/teams/:id/requests/:requestId', (req, res) => {
+app.put('/api/teams/:id/requests/:requestId', async (req, res) => {
     const { status } = req.body;
-    db.run(`UPDATE requests SET status = ? WHERE id = ?`, [status, req.params.requestId], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Status updated' });
-    });
+
+    const { error } = await supabase
+        .from('requests')
+        .update({ status })
+        .eq('id', req.params.requestId);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: 'Status updated' });
 });
 
 app.listen(PORT, () => {
