@@ -182,6 +182,48 @@ app.get('/api/hackathons/:id', async (req, res) => {
     res.json(data);
 });
 
+// Delete Hackathon
+app.delete('/api/hackathons/:id', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+
+        // Verify ownership
+        const { data: hackathon } = await supabase.from('hackathons').select('created_by_user_id').eq('id', req.params.id).single();
+        if (!hackathon) return res.status(404).json({ error: 'Hackathon not found' });
+
+        // Ensure user is the creator
+        if (hackathon.created_by_user_id !== decoded.id) {
+            return res.status(403).json({ error: 'Only the creator can delete this hackathon' });
+        }
+
+        // Delete teams and requests first (if no Cascade)
+        // Ideally DB has ON DELETE CASCADE, but to be safe:
+        // 1. Get all team IDs
+        const { data: teams } = await supabase.from('teams').select('id').eq('hackathon_id', req.params.id);
+        const teamIds = teams.map(t => t.id);
+
+        if (teamIds.length > 0) {
+            // Delete requests for these teams
+            await supabase.from('requests').delete().in('team_id', teamIds);
+            // Delete teams
+            await supabase.from('teams').delete().eq('hackathon_id', req.params.id);
+        }
+
+        // Delete Hackathon
+        const { error } = await supabase.from('hackathons').delete().eq('id', req.params.id);
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Hackathon deleted successfully' });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(401).json({ error: 'Unauthorized or server error' });
+    }
+});
+
 // --- Team Routes ---
 
 // Get Teams for a Hackathon

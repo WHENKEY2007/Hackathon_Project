@@ -163,14 +163,36 @@ const HackathonDetails = () => {
             {/* Teams Section Header */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Active Teams</h2>
-                {user && (
-                    <button
-                        onClick={() => setShowCreateTeam(!showCreateTeam)}
-                        className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg shadow-indigo-500/30 transition-all font-bold hover:scale-105"
-                    >
-                        {showCreateTeam ? 'Cancel' : '+ Create Your Team'}
-                    </button>
-                )}
+                <div className="flex gap-4">
+                    {user && hackathon.created_by_user_id === user.id && (
+                        <button
+                            onClick={async () => {
+                                if (window.confirm('Type DELETE to confirm deleting this entire hackathon and all its teams? This cannot be undone.')) { // Prompt is simpler in regular confirm, but let's just confirm.
+                                    if (window.confirm('Are you ABSOLUTELY sure?')) {
+                                        try {
+                                            await api.delete(`/hackathons/${id}`);
+                                            alert('Hackathon deleted');
+                                            navigate('/');
+                                        } catch (e) {
+                                            alert('Failed to delete');
+                                        }
+                                    }
+                                }
+                            }}
+                            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-all font-bold hover:scale-105"
+                        >
+                            Delete Hackathon
+                        </button>
+                    )}
+                    {user && (
+                        <button
+                            onClick={() => setShowCreateTeam(!showCreateTeam)}
+                            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg shadow-indigo-500/30 transition-all font-bold hover:scale-105"
+                        >
+                            {showCreateTeam ? 'Cancel' : '+ Create Your Team'}
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Create Team Form */}
