@@ -15,11 +15,7 @@ const Navbar = () => {
             <div className="container mx-auto px-6 h-16 flex justify-between items-center">
                 {/* Left: Sign Up (Visitor) or Dashboard (User) */}
                 <div className="flex items-center w-1/3">
-                    {!user && (
-                        <Link to="/register" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-                            ← Sign Up
-                        </Link>
-                    )}
+
                     {user && (
                         <Link to="/" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors">
                             Dashboard
