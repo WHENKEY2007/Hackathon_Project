@@ -294,7 +294,7 @@ app.get('/api/teams/:id/requests', async (req, res) => {
     const { data: requests, error } = await supabase
         .from('requests')
         .select(`
-            id, status,
+            id, status, user_id,
             user:users (name, email, university, skills)
         `)
         .eq('team_id', req.params.id);
@@ -303,6 +303,7 @@ app.get('/api/teams/:id/requests', async (req, res) => {
 
     const formattedRequests = requests.map(r => ({
         id: r.id,
+        user_id: r.user_id,
         status: r.status,
         user_name: r.user?.name,
         user_email: r.user?.email,
@@ -315,15 +316,67 @@ app.get('/api/teams/:id/requests', async (req, res) => {
 
 // Approve/Reject Request
 app.put('/api/teams/:id/requests/:requestId', async (req, res) => {
-    const { status } = req.body;
+    const { status, rejection_reason } = req.body;
 
     const { error } = await supabase
         .from('requests')
-        .update({ status })
+        .update({ status, rejection_reason: status === 'rejected' ? rejection_reason : null })
         .eq('id', req.params.requestId);
 
     if (error) return res.status(500).json({ error: error.message });
     res.json({ message: 'Status updated' });
+});
+
+// Edit Team
+app.put('/api/teams/:id', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        const { name, description, needed_skills } = req.body;
+        const skillsString = Array.isArray(needed_skills) ? needed_skills.join(',') : needed_skills;
+
+        // Verify ownership
+        const { data: team } = await supabase.from('teams').select('leader_id').eq('id', req.params.id).single();
+        if (!team) return res.status(404).json({ error: 'Team not found' });
+        if (team.leader_id !== decoded.id) return res.status(403).json({ error: 'Only the leader can edit the team' });
+
+        const { error } = await supabase
+            .from('teams')
+            .update({ name, description, needed_skills: skillsString })
+            .eq('id', req.params.id);
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Team updated' });
+    } catch (err) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+});
+
+// Delete Team
+app.delete('/api/teams/:id', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+
+        // Verify ownership
+        const { data: team } = await supabase.from('teams').select('leader_id').eq('id', req.params.id).single();
+        if (!team) return res.status(404).json({ error: 'Team not found' });
+        if (team.leader_id !== decoded.id) return res.status(403).json({ error: 'Only the leader can delete the team' });
+
+        // Delete requests first (though Cascade might handle it if set up in DB, explicit is safer here if unsure)
+        await supabase.from('requests').delete().eq('team_id', req.params.id);
+
+        const { error } = await supabase.from('teams').delete().eq('id', req.params.id);
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Team deleted' });
+    } catch (err) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 });
 
 app.listen(PORT, () => {
