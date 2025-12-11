@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import AddHackathon from './pages/AddHackathon';
 import HackathonDetails from './pages/HackathonDetails';
 import HackathonRequests from './pages/HackathonRequests';
+import Profile from './pages/Profile';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -26,6 +27,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/add-hackathon" element={<PrivateRoute><AddHackathon /></PrivateRoute>} />
+              <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
               <Route path="/hackathon/:id" element={<HackathonDetails />} />
               <Route path="/hackathon/:id/manage" element={<PrivateRoute><HackathonRequests /></PrivateRoute>} />
             </Routes>

@@ -44,6 +44,9 @@ const Navbar = () => {
                             <span className="hidden md:inline text-sm text-gray-500 dark:text-gray-400">
                                 {user.name}
                             </span>
+                            <Link to="/profile" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                                Profile
+                            </Link>
                             {user.profile_photo ? (
                                 <img src={user.profile_photo} alt={user.name} className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
                             ) : (

@@ -9,7 +9,6 @@ const Register = () => {
         password: '',
         confirmPassword: '',
         university: '',
-        university: '',
         skills: '',
         profile_photo: ''
     });
@@ -65,9 +64,7 @@ const Register = () => {
                 email,
                 password,
                 university,
-                university,
-                skills: skillsArray,
-                profile_photo
+                skills: skillsArray
             });
 
             setSuccess('Sign up successful! Redirecting...');
@@ -142,10 +139,7 @@ const Register = () => {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profile Photo URL (Optional)</label>
-                            <input type="text" name="profile_photo" className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all dark:bg-gray-700 dark:border-gray-600" placeholder="https://..." onChange={handleChange} />
-                        </div>
+
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>

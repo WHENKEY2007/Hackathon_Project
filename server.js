@@ -32,14 +32,13 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = bcrypt.hashSync(password, 8);
     const skillsString = Array.isArray(skills) ? skills.join(',') : skills;
 
-    // Check if user exists
     const { data: existing } = await supabase.from('users').select('id').eq('email', email).single();
     if (existing) {
         return res.status(500).json({ error: 'User already exists or database error.' });
     }
 
     const { error } = await supabase.from('users').insert([
-        { name, email, password: hashedPassword, university, skills: skillsString, profile_photo }
+        { name, email, password: hashedPassword, university, skills: skillsString }
     ]);
 
     if (error) return res.status(500).json({ error: error.message });
@@ -58,7 +57,67 @@ app.post('/api/auth/login', async (req, res) => {
     if (!validPassword) return res.status(401).json({ error: 'Invalid password.' });
 
     const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: '24h' });
+
+
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, profile_photo: user.profile_photo } });
+});
+
+// Multer setup for file uploads (memory storage)
+const multer = require('multer');
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+// Update Profile
+app.put('/api/auth/profile', upload.single('profile_photo'), async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        const { name, university, skills } = req.body;
+        let { profile_photo } = req.body;
+        const skillsString = Array.isArray(skills) ? skills.join(',') : skills;
+
+        // Handle File Upload
+        if (req.file) {
+            const file = req.file;
+            const fileExt = file.originalname.split('.').pop();
+            const fileName = `${decoded.id}-${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { data, error: uploadError } = await supabase
+                .storage
+                .from('profile-photos')
+                .upload(filePath, file.buffer, {
+                    contentType: file.mimetype
+                });
+
+            if (uploadError) return res.status(500).json({ error: `Upload failed: ${uploadError.message}` });
+
+            // Get Public URL
+            const { data: { publicUrl } } = supabase
+                .storage
+                .from('profile-photos')
+                .getPublicUrl(filePath);
+
+            profile_photo = publicUrl;
+        }
+
+        const { data, error } = await supabase
+            .from('users')
+            .update({ name, university, skills: skillsString, profile_photo })
+            .eq('id', decoded.id)
+            .select('id, name, email, university, skills, profile_photo')
+            .single();
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json(data);
+    } catch (err) {
+        console.error(err);
+        return res.status(401).json({ error: 'Unauthorized or invalid request' });
+    }
 });
 
 // Get Current User (Me)
@@ -70,7 +129,7 @@ app.get('/api/auth/me', async (req, res) => {
         const decoded = jwt.verify(token, SECRET_KEY);
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, name, email, profile_photo')
+            .select('id, name, email, university, skills, profile_photo')
             .eq('id', decoded.id)
             .single();
 
