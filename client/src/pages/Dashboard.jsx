@@ -33,7 +33,7 @@ const Dashboard = () => {
                     Build your <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">Dream Team</span>.
                 </h1>
                 <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-                    Find skilled teammates for your next hackathon or join an existing squad. 
+                    Find skilled teammates for your next hackathon or join an existing squad.
                     University level or Open — we've got you covered.
                 </p>
                 {user && (
@@ -41,7 +41,7 @@ const Dashboard = () => {
                         onClick={() => navigate('/add-hackathon')}
                         className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-all hover:scale-105"
                     >
-                        + Create New Team
+                        + Create New Hackathon
                     </button>
                 )}
             </div>
@@ -59,7 +59,7 @@ const Dashboard = () => {
                                 <HackathonCard key={h.id} hackathon={h} />
                             ))}
                         </div>
-                        
+
                         {hackathons.length === 0 && (
                             <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 max-w-2xl mx-auto mt-8">
                                 <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No active hackathons</h3>
