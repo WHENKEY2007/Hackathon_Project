@@ -35,13 +35,14 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = bcrypt.hashSync(password, 8);
     const skillsString = Array.isArray(skills) ? skills.join(',') : skills;
 
-    const { data: existing } = await supabase.from('users').select('id').eq('email', email).single();
+    const { data: existing, error: findError } = await supabase.from('users').select('id').eq('email', email).maybeSingle();
+
     if (existing) {
-        return res.status(500).json({ error: 'User already exists or database error.' });
+        return res.status(400).json({ error: 'User already exists.' });
     }
 
     const { error } = await supabase.from('users').insert([
-        { name, email, password: hashedPassword, university, skills: skillsString }
+        { name, email, password: hashedPassword, university, skills: skillsString, profile_photo }
     ]);
 
     if (error) return res.status(500).json({ error: error.message });
@@ -62,6 +63,31 @@ app.post('/api/auth/login', async (req, res) => {
     const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: '24h' });
 
 
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, profile_photo: user.profile_photo } });
+});
+
+// Google Login
+app.post('/api/auth/google', async (req, res) => {
+    const { email, name, profile_photo, google_id } = req.body;
+
+    // Check if user exists
+    let { data: user, error } = await supabase.from('users').select('*').eq('email', email).maybeSingle();
+
+    if (!user) {
+        // Create new user
+        // Note: Password is required by schema usually, but for OAuth we can set a dummy one or make it nullable.
+        // Assuming we need a password, we generate a random one. 
+        const dummyPassword = bcrypt.hashSync(Math.random().toString(36).slice(-8), 8);
+
+        const { data: newUser, error: createError } = await supabase.from('users').insert([
+            { name, email, password: dummyPassword, university: '', skills: '', profile_photo }
+        ]).select().single();
+
+        if (createError) return res.status(500).json({ error: createError.message });
+        user = newUser;
+    }
+
+    const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: '24h' });
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, profile_photo: user.profile_photo } });
 });
 

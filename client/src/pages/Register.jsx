@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+import { supabase } from '../supabaseClient';
+
 const Register = () => {
     const [formData, setFormData] = useState({
         name: '',
@@ -21,8 +23,18 @@ const Register = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleGoogleClick = () => {
-        alert('Google sign-up coming soon. Configure Supabase OAuth in server.');
+    const handleGoogleClick = async () => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+            if (error) setError(error.message);
+        } catch (err) {
+            setError('Failed to initiate Google Login');
+        }
     };
 
     const handleSubmit = async (e) => {

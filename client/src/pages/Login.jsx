@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+import { supabase } from '../supabaseClient';
+
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -29,8 +31,18 @@ const Login = () => {
         }
     };
 
-    const handleGoogleClick = () => {
-        alert('Google sign-in coming soon. Configure Supabase OAuth in server.');
+    const handleGoogleClick = async () => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+            if (error) setError(error.message);
+        } catch (err) {
+            setError('Failed to initiate Google Login');
+        }
     };
 
     return (
@@ -53,7 +65,7 @@ const Login = () => {
                     <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Sign In</h2>
                     <p className="text-gray-500 mb-8 text-sm">Enter your credentials to access your account</p>
 
-                    <button 
+                    <button
                         onClick={handleGoogleClick}
                         className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors mb-6 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium"
                     >
@@ -96,8 +108,8 @@ const Login = () => {
                             />
                         </div>
 
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-lg shadow-emerald-500/20 transition-all mt-2"
                         >
                             Log In
