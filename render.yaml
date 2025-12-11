@@ -3,7 +3,7 @@ services:
     name: hackathon-team-finder
     env: node
     buildCommand: npm install
-    startCommand: node server.js
+    startCommand: node index.js
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
