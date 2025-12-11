@@ -257,13 +257,17 @@ app.delete('/api/hackathons/:id', async (req, res) => {
 
 // Get Teams for a Hackathon
 app.get('/api/hackathons/:id/teams', async (req, res) => {
-    // We need to fetch teams, their leaders, and their approved members
-    // Supabase standard client can do deep Selects
-    // Relation names depend on how FKs are set up. Assuming 'users' referenced by 'leader_id'
+    const token = req.headers.authorization?.split(' ')[1];
+    let userId = null;
 
-    // Attempting a relational query. If strict FKs are not set or named differently, this might fail slightly,
-    // but we requested FKs in the plan.
-    // 'leader:users!leader_id' means join users table via leader_id column and alias as leader.
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, SECRET_KEY);
+            userId = decoded.id;
+        } catch (e) {
+            // Ignore invalid token, just treat as guest
+        }
+    }
 
     const { data: teams, error } = await supabase
         .from('teams')
@@ -272,6 +276,7 @@ app.get('/api/hackathons/:id/teams', async (req, res) => {
             leader:users!leader_id (name, email),
             requests (
                 status,
+                user_id,
                 user:users (name)
             )
         `)
@@ -279,18 +284,29 @@ app.get('/api/hackathons/:id/teams', async (req, res) => {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    // Format the response to match the previous structure
-    // We filter requests to only 'approved' ones to count members and list names
+    // Format the response
     const formattedTeams = teams.map(team => {
         const approvedRequests = team.requests ? team.requests.filter(r => r.status === 'approved') : [];
         const memberNames = approvedRequests.map(r => r.user?.name).filter(Boolean).join(',');
+
+        // Determine user status if logged in
+        let userStatus = null;
+        if (userId) {
+            const userRequest = team.requests ? team.requests.find(r => r.user_id === userId) : null;
+            if (userRequest) {
+                userStatus = userRequest.status;
+            } else if (team.leader_id === userId) {
+                userStatus = 'leader';
+            }
+        }
 
         return {
             ...team,
             leader_name: team.leader?.name,
             leader_email: team.leader?.email,
-            current_members: approvedRequests.length, // Leader is usually added as a member in requests too
-            member_names: memberNames
+            current_members: approvedRequests.length,
+            member_names: memberNames,
+            user_status: userStatus
         };
     });
 

@@ -300,7 +300,7 @@ const HackathonDetails = () => {
                             </div>
 
                             <div className="mt-auto border-t border-gray-100 dark:border-gray-700 pt-5 flex items-center justify-between gap-2">
-                                <span className="text-sm font-bold text-gray-500">
+                                <span className={`text-sm font-bold ${team.current_members >= (hackathon.max_team_size || 4) ? 'text-red-500' : 'text-gray-500'}`}>
                                     {team.current_members} / {hackathon.max_team_size || 4} Members
                                 </span>
                                 {user && user.id === team.leader_id ? (
@@ -322,12 +322,27 @@ const HackathonDetails = () => {
                                                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                                             </svg>
                                         </a>
-                                        <button
-                                            onClick={() => handleJoinTeam(team.id)}
-                                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
-                                        >
-                                            Request to Join
-                                        </button>
+
+                                        {team.user_status === 'approved' ? (
+                                            <span className="px-5 py-2.5 bg-green-100 text-green-700 text-sm font-bold rounded-xl border border-green-200">
+                                                Joined
+                                            </span>
+                                        ) : team.user_status === 'pending' ? (
+                                            <span className="px-5 py-2.5 bg-yellow-100 text-yellow-700 text-sm font-bold rounded-xl border border-yellow-200">
+                                                Request Sent
+                                            </span>
+                                        ) : team.current_members >= (hackathon.max_team_size || 4) ? (
+                                            <span className="px-5 py-2.5 bg-gray-100 text-gray-500 text-sm font-bold rounded-xl border border-gray-200 cursor-not-allowed">
+                                                Team Full
+                                            </span>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleJoinTeam(team.id)}
+                                                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
+                                            >
+                                                Request to Join
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
