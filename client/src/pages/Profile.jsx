@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
@@ -31,10 +31,7 @@ const Profile = () => {
 
     const fetchProfile = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/auth/me', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/auth/me');
             // Update form with fresh data
             const userData = res.data;
             setFormData({
@@ -61,11 +58,10 @@ const Profile = () => {
         setLoading(true);
         setMsg(null);
         try {
-            const token = localStorage.getItem('token');
             const data = new FormData();
             data.append('name', formData.name);
             data.append('university', formData.university);
-            data.append('skills', formData.skills); // Backend parses array if logic remains, or string? 
+            data.append('skills', formData.skills);
             // In backend: "const skillsString = Array.isArray(skills) ? skills.join(',') : skills;"
             // FormData sends strings. So duplicate key or comma separated? Server expects string or array.
             // Let's send regular string if simple, or if we want array behavior with FormData we append multiple times.
@@ -80,9 +76,8 @@ const Profile = () => {
                 data.append('profile_photo', formData.profile_photo);
             }
 
-            const res = await axios.put('http://localhost:5000/api/auth/profile', data, {
+            const res = await api.put('/auth/profile', data, {
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
                 }
             });
