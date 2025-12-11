@@ -1,18 +1,18 @@
-# Hackathon Team Finder
+# CollabX
 
-A platform designed to help developers find teammates for hackathons, create teams, and manage join requests efficiently.
+A modern platform designed to help developers find teammates for hackathons, create teams, and manage join requests efficiently.
 
 ## Features
 
--   **User Authentication**: Register and login with email/password.
--   **Profile Management**: Update user profiles with skills, university, and profile photos.
--   **Hackathon Management**: Create and view hackathons.
--   **Team Management**: Create teams for specific hackathons, manage team members, and handle join requests.
--   **Team Finder**: Browse teams and request to join based on skills and interests.
+-   **User Authentication**: Secure registration and login.
+-   **Profile Management**: Showcase skills, achievements, and professional details.
+-   **Hackathon Management**: Explore and organize hackathons.
+-   **Team Management**: Form teams, manage members, and handle real-time requests.
+-   **Team Finder**: Smart matching for teammates based on skills.
 
 ## Tech Stack
 
--   **Frontend**: React (Vite), Tailwind CSS
+-   **Frontend**: React 19, Vite, Tailwind CSS v4, React Router v7
 -   **Backend**: Node.js, Express.js
 -   **Database**: Supabase (PostgreSQL)
 -   **Authentication**: JWT & Bcrypt
