@@ -2,7 +2,7 @@ services:
   - type: web
     name: hackathon-team-finder
     env: node
-    buildCommand: npm install
+    buildCommand: npm run install-all
     startCommand: node index.js
     envVars:
       - key: NODE_VERSION

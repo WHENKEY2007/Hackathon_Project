@@ -24,6 +24,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'client/dist')));
+
 // --- Auth Routes ---
 
 // Register
@@ -419,6 +422,10 @@ app.delete('/api/teams/:id', async (req, res) => {
     } catch (err) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
+});
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
